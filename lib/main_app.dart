@@ -1,14 +1,18 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:p21_weather_app/data/repositories/shared_preferences_repository.dart';
+
 import 'package:p21_weather_app/ui/screens/home_screen.dart';
 
 class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+  const MainApp({
+    super.key,
+    required this.sharedPrefsRepo,
+  });
+
+  final SharedPreferencesRepository sharedPrefsRepo;
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: HomeScreen());
+    return MaterialApp(home: HomeScreen(sharedPrefsRepo: sharedPrefsRepo));
   }
 }
