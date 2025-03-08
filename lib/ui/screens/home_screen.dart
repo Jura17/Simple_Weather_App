@@ -54,7 +54,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void fetchCurrentTemperature(currentCity) async {
-    String uri = apiUris[currentCity];
+    String? uri = apiUris[currentCity];
+    if (uri == null) return;
     final response = await http.get(Uri.parse(uri));
 
     final weatherJsonData = jsonDecode(response.body);
@@ -82,30 +83,18 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Center(
         child: Column(
           spacing: 20,
-          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            DropdownMenu(
-              initialSelection: _currentCity,
-              controller: cityController,
-              onSelected: (value) {
-                setState(() {
-                  _currentCity = value!;
-                });
-              },
-              // TODO: fill values using the keys from the api_url map to ensure all cities are listed
-              dropdownMenuEntries: [
-                DropdownMenuEntry(value: "Berlin", label: "Berlin"),
-                DropdownMenuEntry(value: "Stockholm", label: "Stockholm"),
-                DropdownMenuEntry(value: "Osaka", label: "Osaka"),
-                DropdownMenuEntry(value: "New York", label: "New York"),
-                DropdownMenuEntry(value: "Sao Paulo", label: "Sao Paulo"),
-              ],
+            Spacer(),
+            Text(
+              _currentCity,
+              style: TextStyle(fontSize: 40, fontWeight: FontWeight.w700),
             ),
             Text(
               _tempInfoText,
               style: TextStyle(fontSize: 20),
             ),
+            Spacer(),
             ElevatedButton.icon(
               label: Text("Aktualisieren"),
               icon: Icon(
@@ -115,7 +104,20 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () {
                 fetchCurrentTemperature(_currentCity);
               },
-            )
+            ),
+            DropdownMenu(
+              initialSelection: _currentCity,
+              controller: cityController,
+              onSelected: (value) {
+                setState(() {
+                  _currentCity = value!;
+                });
+              },
+              dropdownMenuEntries: apiUris.keys
+                  .map((city) => DropdownMenuEntry(value: city, label: city))
+                  .toList(),
+            ),
+            Spacer(),
           ],
         ),
       ),
