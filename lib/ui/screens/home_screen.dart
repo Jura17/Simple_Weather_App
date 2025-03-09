@@ -19,14 +19,22 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _tempInfoText = "";
-  double _mostRecentTemperature = 0.0;
+  String _timeInfoText = "";
+  String _preciptationInfoText = "";
+  String _rainInfoText = "";
+  String _humidityInfoText = "";
+  String _apparentTempInfoText = "";
+  double? _mostRecentTemperature = 0.0;
+  double? _mostRecentApparentTemp = 0.0;
+  int? _mostRecentHumidity = 0;
+  double? _mostRecentRain = 0.0;
   TextEditingController cityController = TextEditingController();
-  String _currentCity = "";
+  String _currentCity = "Berlin";
 
   @override
   void initState() {
     super.initState();
-    fetchRecentData();
+    fetchRecentWeatherData();
   }
 
   @override
@@ -35,36 +43,56 @@ class _HomeScreenState extends State<HomeScreen> {
     cityController.dispose();
   }
 
-  void fetchRecentData() async {
+  void fetchRecentWeatherData() async {
     _currentCity = await widget.sharedPrefsRepo.recentCity;
     _mostRecentTemperature = await widget.sharedPrefsRepo.recentTemperature;
+    _mostRecentApparentTemp = await widget.sharedPrefsRepo.recentApparentTemp;
 
     setState(() {
       if (_currentCity.isEmpty) {
         _currentCity = "Berlin";
       }
 
-      if (_mostRecentTemperature == 0.0) {
+      if (_mostRecentTemperature == null) {
         _tempInfoText = "Aktuell keine Daten vorhanden";
       } else {
         _tempInfoText =
             "Temperatur in $_currentCity: $_mostRecentTemperature °C";
       }
+
+      if (_mostRecentApparentTemp != null) {
+        _apparentTempInfoText = "Gefühlt: $_mostRecentApparentTemp °C";
+      }
+      if (_mostRecentHumidity != null) {
+        _humidityInfoText = "Luftfeuchtigkeit: $_mostRecentHumidity%";
+      }
+      if (_mostRecentRain != null) {
+        _rainInfoText = "Regenwahrscheinlichkeit: $_mostRecentRain%";
+      }
     });
   }
 
-  void fetchCurrentTemperature(currentCity) async {
+  void fetchCurrentWeatherData(currentCity) async {
     String? uri = apiUris[currentCity];
     if (uri == null) return;
     final response = await http.get(Uri.parse(uri));
 
     final weatherJsonData = jsonDecode(response.body);
     final newTemperature = weatherJsonData["current"]["temperature_2m"];
+    final newHumidity = weatherJsonData["current"]["relative_humidity_2m"];
+    final newApparentTemp = weatherJsonData["current"]["apparent_temperature"];
+    final newRain = weatherJsonData["current"]["rain"];
 
     setState(() {
       _tempInfoText = "Temperatur in $currentCity: $newTemperature °C";
+      _apparentTempInfoText = "Gefühlt: $newApparentTemp °C";
+      _humidityInfoText = "Luftfeuchtigkeit: $newHumidity%";
+      _rainInfoText = "Regenwahrscheinlichkeit: $newRain%";
     });
     await widget.sharedPrefsRepo.overrideRecentTemperature(newTemperature);
+    await widget.sharedPrefsRepo.overrideRecentApparentTemp(newApparentTemp);
+    await widget.sharedPrefsRepo.overrideRecentHumidity(newHumidity);
+    await widget.sharedPrefsRepo.overrideRecentRain(newRain);
     _currentCity = currentCity!;
     await widget.sharedPrefsRepo.overrideRecentCity(currentCity);
   }
@@ -90,10 +118,10 @@ class _HomeScreenState extends State<HomeScreen> {
               _currentCity,
               style: TextStyle(fontSize: 40, fontWeight: FontWeight.w700),
             ),
-            Text(
-              _tempInfoText,
-              style: TextStyle(fontSize: 20),
-            ),
+            Text(_tempInfoText, style: TextStyle(fontSize: 20)),
+            Text(_apparentTempInfoText, style: TextStyle(fontSize: 20)),
+            Text(_humidityInfoText, style: TextStyle(fontSize: 20)),
+            Text(_rainInfoText, style: TextStyle(fontSize: 20)),
             Spacer(),
             ElevatedButton.icon(
               label: Text("Aktualisieren"),
@@ -102,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 size: 40,
               ),
               onPressed: () {
-                fetchCurrentTemperature(_currentCity);
+                fetchCurrentWeatherData(_currentCity);
               },
             ),
             DropdownMenu(
