@@ -6,8 +6,9 @@ class SharedPreferencesRepository extends DatabaseRepository {
   final String _cityKey = "recentCity";
   final String _apparentTempKey = "recentApparentTemp";
   final String _humidityKey = "recentHumidity";
-  final String _precipitationKey = "recentPrecipitation";
-  final String _rainKey = "recentRain";
+  final String _rainSumKey = "recentRainSum";
+  final String _minTempKey = "minTempList";
+  final String _maxTempKey = "maxTempList";
 
   late final Future<SharedPreferences> _prefsFuture;
 
@@ -34,21 +35,39 @@ class SharedPreferencesRepository extends DatabaseRepository {
   }
 
   @override
-  Future<void> overrideRecentPrecipitation(double recentPrecipitation) async {
+  Future<void> overrideRecentRainSum(double recentRainSum) async {
     final prefs = await _prefsFuture;
-    await prefs.setDouble(_precipitationKey, recentPrecipitation);
+
+    await prefs.setDouble(_rainSumKey, recentRainSum);
   }
 
   @override
-  Future<void> overrideRecentRain(double recentRain) async {
+  Future<void> overrideMinTempList(List<dynamic> recentMinTempList) async {
     final prefs = await _prefsFuture;
-    await prefs.setDouble(_rainKey, recentRain);
+    final List<String> minTempStringList =
+        recentMinTempList.map((minTemp) => minTemp.toString()).toList();
+
+    await prefs.setStringList(_minTempKey, minTempStringList);
+  }
+
+  @override
+  Future<void> overrideMaxTempList(List<dynamic> recentMaxTempList) async {
+    final prefs = await _prefsFuture;
+    final List<String> maxTempStringList =
+        recentMaxTempList.map((maxTemp) => maxTemp.toString()).toList();
+
+    await prefs.setStringList(_maxTempKey, maxTempStringList);
   }
 
   @override
   Future<void> clearHistory() async {
     final prefs = await _prefsFuture;
     prefs.remove(_tempKey);
+    prefs.remove(_apparentTempKey);
+    prefs.remove(_humidityKey);
+    prefs.remove(_rainSumKey);
+    prefs.remove(_minTempKey);
+    prefs.remove(_maxTempKey);
   }
 
   @override
@@ -82,14 +101,20 @@ class SharedPreferencesRepository extends DatabaseRepository {
   }
 
   @override
-  Future<double?> get recentPricipitation async {
+  Future<double?> get recentRainSum async {
     final prefs = await _prefsFuture;
-    return prefs.getDouble(_precipitationKey);
+    return prefs.getDouble(_rainSumKey);
   }
 
   @override
-  Future<double?> get recentRain async {
+  Future<List<String>?> get recentMinTempList async {
     final prefs = await _prefsFuture;
-    return prefs.getDouble(_rainKey);
+    return prefs.getStringList(_minTempKey);
+  }
+
+  @override
+  Future<List<String>?> get recentMaxTempList async {
+    final prefs = await _prefsFuture;
+    return prefs.getStringList(_maxTempKey);
   }
 }

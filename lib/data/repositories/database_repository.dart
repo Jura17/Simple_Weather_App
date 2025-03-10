@@ -3,13 +3,16 @@ abstract class DatabaseRepository {
   Future<void> overrideRecentTemperature(double recentTemp);
   Future<void> overrideRecentApparentTemp(double recentApparentTemp);
   Future<void> overrideRecentHumidity(int recentHumidity);
-  Future<void> overrideRecentPrecipitation(double recentPrecipitation);
-  Future<void> overrideRecentRain(double recentRain);
+  Future<void> overrideRecentRainSum(double recentRainSumList);
+  Future<void> overrideMinTempList(List<dynamic> recentMinTempList);
+  Future<void> overrideMaxTempList(List<dynamic> recentMaxTempList);
+
   Future<String> get recentCity;
   Future<double?> get recentTemperature;
   Future<double?> get recentApparentTemp;
   Future<int?> get recentHumidity;
-  Future<double?> get recentPricipitation;
-  Future<double?> get recentRain;
+  Future<double?> get recentRainSum;
+  Future<List<String>?> get recentMinTempList;
+  Future<List<String>?> get recentMaxTempList;
   Future<void> clearHistory();
 }
