@@ -46,7 +46,8 @@ class WeatherDataContainer extends StatelessWidget {
           SizedBox(height: 5),
           Text(_rainSumInfoText, style: TextStyle(fontSize: 20)),
           SizedBox(height: 40),
-          Text("7-Tage Prognose", style: TextStyle(fontSize: 20)),
+          Text("7-Tage Höchst- und Tiefstwerte",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
           SizedBox(height: 10),
           Row(
             spacing: 15,
@@ -57,13 +58,12 @@ class WeatherDataContainer extends StatelessWidget {
                     children: [
                       Text(
                         "${key[0]}${key[1]}",
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 20),
+                        style: TextStyle(fontSize: 20),
                       ),
                       Text(_foreCastData[key][1].toString(),
-                          style: TextStyle(fontSize: 15)),
+                          style: TextStyle(fontSize: 20)),
                       Text(_foreCastData[key][0].toString(),
-                          style: TextStyle(fontSize: 15)),
+                          style: TextStyle(fontSize: 20)),
                     ],
                   ),
                 )

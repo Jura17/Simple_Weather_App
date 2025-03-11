@@ -200,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(height: 100),
+              SizedBox(height: 70),
               Text(
                 _mostRecentCity,
                 style: TextStyle(fontSize: 40, fontWeight: FontWeight.w700),
@@ -233,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             DropdownMenuEntry(value: city, label: city))
                         .toList(),
                   ),
-                  SizedBox(height: 10),
+                  SizedBox(height: 15),
                   ElevatedButton.icon(
                     label: Text("Aktualisieren"),
                     icon: Icon(
@@ -246,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              SizedBox(height: 100),
+              SizedBox(height: 70),
             ],
           ),
         ),
