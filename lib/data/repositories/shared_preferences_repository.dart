@@ -9,6 +9,7 @@ class SharedPreferencesRepository extends DatabaseRepository {
   final String _rainSumKey = "recentRainSum";
   final String _minTempKey = "minTempList";
   final String _maxTempKey = "maxTempList";
+  final String _dateListKey = "dateList";
 
   late final Future<SharedPreferences> _prefsFuture;
 
@@ -60,6 +61,20 @@ class SharedPreferencesRepository extends DatabaseRepository {
   }
 
   @override
+  Future<void> overrideRecentCity(String currentCity) async {
+    final prefs = await _prefsFuture;
+    await prefs.setString(_cityKey, currentCity);
+  }
+
+  @override
+  Future<void> overrideDateList(List<dynamic> recentDateList) async {
+    final prefs = await _prefsFuture;
+    final List<String> dateStringList =
+        recentDateList.map((date) => date.toString()).toList();
+    await prefs.setStringList(_dateListKey, dateStringList);
+  }
+
+  @override
   Future<void> clearHistory() async {
     final prefs = await _prefsFuture;
     prefs.remove(_tempKey);
@@ -68,12 +83,7 @@ class SharedPreferencesRepository extends DatabaseRepository {
     prefs.remove(_rainSumKey);
     prefs.remove(_minTempKey);
     prefs.remove(_maxTempKey);
-  }
-
-  @override
-  Future<void> overrideRecentCity(String currentCity) async {
-    final prefs = await _prefsFuture;
-    await prefs.setString(_cityKey, currentCity);
+    prefs.remove(_dateListKey);
   }
 
   @override
@@ -116,5 +126,11 @@ class SharedPreferencesRepository extends DatabaseRepository {
   Future<List<String>?> get recentMaxTempList async {
     final prefs = await _prefsFuture;
     return prefs.getStringList(_maxTempKey);
+  }
+
+  @override
+  Future<List<String>?> get recentDateList async {
+    final prefs = await _prefsFuture;
+    return prefs.getStringList(_dateListKey);
   }
 }

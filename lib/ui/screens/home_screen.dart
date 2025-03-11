@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:p21_weather_app/data/city_data.dart';
 import 'package:p21_weather_app/data/repositories/shared_preferences_repository.dart';
+import 'package:p21_weather_app/ui/widgets/weather_data_container.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -25,15 +26,16 @@ class _HomeScreenState extends State<HomeScreen> {
   String _minTempTodayInfoText = "";
   String _maxTempTodayInfoText = "";
   String _errorText = "";
+  bool _showError = false;
+  final Map<String, dynamic> _foreCastData = {};
 
   double? _mostRecentTemperature;
   double? _mostRecentApparentTemp;
   int? _mostRecentHumidity;
   double? _mostRecentRainSum;
-
   List<String>? _mostRecentMinTempList;
   List<String>? _mostRecentMaxTempList;
-
+  List<String>? _mostRecentDateList;
   String _mostRecentCity = "Berlin";
 
   TextEditingController cityController = TextEditingController();
@@ -58,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _mostRecentHumidity = await widget.sharedPrefsRepo.recentHumidity;
     _mostRecentRainSum = await widget.sharedPrefsRepo.recentRainSum;
     _mostRecentCity = await widget.sharedPrefsRepo.recentCity;
+    _mostRecentDateList = await widget.sharedPrefsRepo.recentDateList;
 
     setState(() {
       if (_mostRecentCity.isEmpty) {
@@ -65,6 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       if (_mostRecentTemperature == null) {
+        _showError = true;
         _errorText = "Aktuell keine Daten vorhanden";
       } else {
         _tempInfoText = "$_mostRecentTemperature °C";
@@ -79,11 +83,15 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_mostRecentRainSum != null) {
         _rainSumInfoText = "Regenmenge heute: $_mostRecentRainSum mm";
       }
-      if (_mostRecentMinTempList != null) {
+      if (_mostRecentMinTempList != null && _mostRecentMaxTempList != null) {
         _minTempTodayInfoText = "L: ${_mostRecentMinTempList!.first}";
-      }
-      if (_mostRecentMaxTempList != null) {
         _maxTempTodayInfoText = "H: ${_mostRecentMaxTempList!.first}";
+      }
+      if (_mostRecentMinTempList != null &&
+          _mostRecentMaxTempList != null &&
+          _mostRecentDateList != null) {
+        generateForecastMap(_mostRecentDateList, _mostRecentMinTempList,
+            _mostRecentMaxTempList);
       }
     });
   }
@@ -104,15 +112,35 @@ class _HomeScreenState extends State<HomeScreen> {
         processWeatherData(weatherJsonData, currentCity);
       } else {
         setState(() {
+          _showError = true;
           _errorText =
               "Daten konnten nicht geladen werden.\nVersuch es später erneut.";
         });
       }
     } catch (error) {
       setState(() {
+        _showError = true;
         _errorText = "Ein Fehler ist aufgetreten";
       });
       return;
+    }
+  }
+
+  void generateForecastMap(dateList, minTempList, maxTempList) {
+    List<String> weekDays = [
+      "Montag",
+      "Dienstag",
+      "Mittwoch",
+      "Donnerstag",
+      "Freitag",
+      "Samstag",
+      "Sonntag"
+    ];
+
+    for (int i = 0; i < dateList.length; i++) {
+      DateTime date = DateTime.parse(dateList[i]);
+      String weekDay = weekDays[date.weekday - 1];
+      _foreCastData[weekDay] = [minTempList[i], maxTempList[i]];
     }
   }
 
@@ -126,7 +154,11 @@ class _HomeScreenState extends State<HomeScreen> {
       final newMinTempList = weatherJsonData["daily"]["temperature_2m_min"];
       final newMaxTempList = weatherJsonData["daily"]["temperature_2m_max"];
 
+      final newDateList = weatherJsonData["daily"]["time"];
+      generateForecastMap(newDateList, newMinTempList, newMaxTempList);
+
       setState(() {
+        _showError = false;
         _tempInfoText = "$newTemperature °C";
         _apparentTempInfoText = "Gefühlt: $newApparentTemp °C";
         _humidityInfoText = "Luftfeuchtigkeit: $newHumidity%";
@@ -141,11 +173,13 @@ class _HomeScreenState extends State<HomeScreen> {
       await widget.sharedPrefsRepo.overrideRecentRainSum(newRainSumList.first);
       await widget.sharedPrefsRepo.overrideMinTempList(newMinTempList);
       await widget.sharedPrefsRepo.overrideMaxTempList(newMaxTempList);
+      await widget.sharedPrefsRepo.overrideDateList(newDateList);
 
       _mostRecentCity = currentCity!;
       await widget.sharedPrefsRepo.overrideRecentCity(currentCity);
     } catch (error) {
-      print("from processWeatherData: $error");
+      _showError = true;
+      _errorText = "Es ist ein Problem aufgetreten";
     }
   }
 
@@ -166,53 +200,53 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Spacer(),
+              SizedBox(height: 100),
               Text(
                 _mostRecentCity,
                 style: TextStyle(fontSize: 40, fontWeight: FontWeight.w700),
               ),
               SizedBox(height: 20),
-              if (_errorText.isNotEmpty)
-                Text(_errorText, style: TextStyle(fontSize: 20)),
-              Text(_tempInfoText, style: TextStyle(fontSize: 40)),
-              Text(_apparentTempInfoText, style: TextStyle(fontSize: 20)),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 10,
+              _showError
+                  ? Text(_errorText, style: TextStyle(fontSize: 20))
+                  : WeatherDataContainer(
+                      tempInfoText: _tempInfoText,
+                      apparentTempInfoText: _apparentTempInfoText,
+                      minTempTodayInfoText: _minTempTodayInfoText,
+                      maxTempTodayInfoText: _maxTempTodayInfoText,
+                      humidityInfoText: _humidityInfoText,
+                      rainSumInfoText: _rainSumInfoText,
+                      foreCastData: _foreCastData,
+                    ),
+              Spacer(),
+              Column(
                 children: [
-                  Text(_minTempTodayInfoText, style: TextStyle(fontSize: 20)),
-                  Text(_maxTempTodayInfoText, style: TextStyle(fontSize: 20)),
+                  DropdownMenu(
+                    initialSelection: _mostRecentCity,
+                    controller: cityController,
+                    onSelected: (value) {
+                      setState(() {
+                        _mostRecentCity = value!;
+                      });
+                    },
+                    dropdownMenuEntries: cityData.keys
+                        .map((city) =>
+                            DropdownMenuEntry(value: city, label: city))
+                        .toList(),
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    label: Text("Aktualisieren"),
+                    icon: Icon(
+                      Icons.refresh,
+                      size: 40,
+                    ),
+                    onPressed: () {
+                      fetchCurrentWeatherData(_mostRecentCity);
+                    },
+                  ),
                 ],
               ),
-              SizedBox(height: 30),
-              Text(_humidityInfoText, style: TextStyle(fontSize: 20)),
-              SizedBox(height: 5),
-              Text(_rainSumInfoText, style: TextStyle(fontSize: 20)),
-              Spacer(),
-              DropdownMenu(
-                initialSelection: _mostRecentCity,
-                controller: cityController,
-                onSelected: (value) {
-                  setState(() {
-                    _mostRecentCity = value!;
-                  });
-                },
-                dropdownMenuEntries: cityData.keys
-                    .map((city) => DropdownMenuEntry(value: city, label: city))
-                    .toList(),
-              ),
-              SizedBox(height: 10),
-              ElevatedButton.icon(
-                label: Text("Aktualisieren"),
-                icon: Icon(
-                  Icons.refresh,
-                  size: 40,
-                ),
-                onPressed: () {
-                  fetchCurrentWeatherData(_mostRecentCity);
-                },
-              ),
-              Spacer(),
+              SizedBox(height: 100),
             ],
           ),
         ),
