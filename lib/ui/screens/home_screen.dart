@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:p21_weather_app/data/city_data.dart';
 import 'package:p21_weather_app/data/repositories/shared_preferences_repository.dart';
+import 'package:p21_weather_app/ui/widgets/high_low_temperatures.dart';
 import 'package:p21_weather_app/ui/widgets/seven_day_forecast_container.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -23,8 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _apparentTempInfoText = "";
   String _humidityInfoText = "";
   String _rainSumInfoText = "";
-  String _minTempTodayInfoText = "";
-  String _maxTempTodayInfoText = "";
+
   String _messageText = "";
   bool _showMessage = false;
 
@@ -32,8 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   double? _mostRecentApparentTemp;
   int? _mostRecentHumidity;
   double? _mostRecentRainSum;
-  List<String>? _mostRecentMinTempList;
-  List<String>? _mostRecentMaxTempList;
+
   String _mostRecentCity = "Berlin";
 
   dynamic _weatherJsonData = "";
@@ -53,8 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void fetchRecentWeatherData() async {
     _mostRecentTemperature = await widget.sharedPrefsRepo.recentTemperature;
-    _mostRecentMinTempList = await widget.sharedPrefsRepo.recentMinTempList;
-    _mostRecentMaxTempList = await widget.sharedPrefsRepo.recentMaxTempList;
+
     _mostRecentApparentTemp = await widget.sharedPrefsRepo.recentApparentTemp;
     _mostRecentHumidity = await widget.sharedPrefsRepo.recentHumidity;
     _mostRecentRainSum = await widget.sharedPrefsRepo.recentRainSum;
@@ -80,10 +78,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       if (_mostRecentRainSum != null) {
         _rainSumInfoText = "Regenmenge heute: $_mostRecentRainSum mm";
-      }
-      if (_mostRecentMinTempList != null && _mostRecentMaxTempList != null) {
-        _minTempTodayInfoText = "L: ${_mostRecentMinTempList!.first}";
-        _maxTempTodayInfoText = "H: ${_mostRecentMaxTempList!.first}";
       }
     });
   }
@@ -125,8 +119,6 @@ class _HomeScreenState extends State<HomeScreen> {
       final newApparentTemp =
           weatherJsonData["current"]["apparent_temperature"];
       final newRainSumList = weatherJsonData["daily"]["rain_sum"];
-      final newMinTempList = weatherJsonData["daily"]["temperature_2m_min"];
-      final newMaxTempList = weatherJsonData["daily"]["temperature_2m_max"];
 
       setState(() {
         _showMessage = false;
@@ -134,16 +126,13 @@ class _HomeScreenState extends State<HomeScreen> {
         _apparentTempInfoText = "Gefühlt: $newApparentTemp °C";
         _humidityInfoText = "Luftfeuchtigkeit: $newHumidity%";
         _rainSumInfoText = "Regenmenge heute: ${newRainSumList.first} mm";
-        _minTempTodayInfoText = "L: ${newMinTempList.first}";
-        _maxTempTodayInfoText = "H: ${newMaxTempList.first}";
+
         _messageText = "";
       });
       await widget.sharedPrefsRepo.overrideRecentTemperature(newTemperature);
       await widget.sharedPrefsRepo.overrideRecentApparentTemp(newApparentTemp);
       await widget.sharedPrefsRepo.overrideRecentHumidity(newHumidity);
       await widget.sharedPrefsRepo.overrideRecentRainSum(newRainSumList.first);
-      await widget.sharedPrefsRepo.overrideMinTempList(newMinTempList);
-      await widget.sharedPrefsRepo.overrideMaxTempList(newMaxTempList);
 
       _mostRecentCity = currentCity!;
       await widget.sharedPrefsRepo.overrideRecentCity(currentCity);
@@ -190,16 +179,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           Text(_tempInfoText, style: TextStyle(fontSize: 40)),
                           Text(_apparentTempInfoText,
                               style: TextStyle(fontSize: 20)),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            spacing: 10,
-                            children: [
-                              Text(_minTempTodayInfoText,
-                                  style: TextStyle(fontSize: 20)),
-                              Text(_maxTempTodayInfoText,
-                                  style: TextStyle(fontSize: 20)),
-                            ],
-                          ),
+                          HighLowTemperatures(
+                              weatherJsonData: _weatherJsonData,
+                              sharedPrefsRepo: widget.sharedPrefsRepo),
                           SizedBox(height: 30),
                           Text(_humidityInfoText,
                               style: TextStyle(fontSize: 20)),
