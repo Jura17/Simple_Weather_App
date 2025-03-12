@@ -34,8 +34,9 @@ class _SevenDayForecastContainerState extends State<SevenDayForecastContainer> {
 
     return Column(
       children: [
-        Text("Höchst- und Tiefstwertprognose",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+        if (_forecastData.isNotEmpty)
+          Text("Höchst- und Tiefstwertprognose",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
         SizedBox(height: 10),
         Row(
           spacing: 15,
@@ -78,7 +79,7 @@ class _SevenDayForecastContainerState extends State<SevenDayForecastContainer> {
         _forecastData[weekDay] = [minTempList[i], maxTempList[i]];
       }
     } catch (e) {
-      print(e);
+      return;
     }
   }
 
@@ -93,8 +94,7 @@ class _SevenDayForecastContainerState extends State<SevenDayForecastContainer> {
 
       await widget.sharedPrefsRepo.overrideSavedDateList(newDateList);
     } catch (error) {
-      // _showError = true;
-      // _errorText = "Es ist ein Problem aufgetreten";
+      return;
     }
   }
 

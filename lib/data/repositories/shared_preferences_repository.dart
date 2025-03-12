@@ -77,6 +77,8 @@ class SharedPreferencesRepository extends DatabaseRepository {
   @override
   Future<void> clearHistory() async {
     final prefs = await _prefsFuture;
+
+    prefs.remove(_cityKey);
     prefs.remove(_tempKey);
     prefs.remove(_apparentTempKey);
     prefs.remove(_humidityKey);

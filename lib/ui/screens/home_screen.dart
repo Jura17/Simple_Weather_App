@@ -5,10 +5,12 @@ import 'package:http/http.dart' as http;
 import 'package:p21_weather_app/data/city_data.dart';
 import 'package:p21_weather_app/data/repositories/shared_preferences_repository.dart';
 import 'package:p21_weather_app/ui/widgets/apparent_temperature.dart';
+import 'package:p21_weather_app/ui/widgets/city_dropdown_menu.dart';
 import 'package:p21_weather_app/ui/widgets/high_low_temperatures.dart';
 import 'package:p21_weather_app/ui/widgets/humidity.dart';
 import 'package:p21_weather_app/ui/widgets/rain_sum.dart';
 import 'package:p21_weather_app/ui/widgets/seven_day_forecast_container.dart';
+import 'package:p21_weather_app/ui/widgets/temperature.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -23,12 +25,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _tempInfoText = "";
-  // String _rainSumInfoText = "";
-  String _messageText = "";
+  String _messageText = "Aktuell keine Daten vorhanden";
   bool _showMessage = false;
-  double? _savedTemperature;
-  // double? _savedRainSum;
   String _savedCity = "Berlin";
 
   dynamic _weatherJsonData = "";
@@ -37,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    fetchRecentWeatherData();
+    fetchSavedCity();
   }
 
   @override
@@ -46,25 +44,15 @@ class _HomeScreenState extends State<HomeScreen> {
     cityController.dispose();
   }
 
-  void fetchRecentWeatherData() async {
-    _savedTemperature = await widget.sharedPrefsRepo.savedTemperature;
-    // _savedRainSum = await widget.sharedPrefsRepo.savedRainSum;
+  void fetchSavedCity() async {
     _savedCity = await widget.sharedPrefsRepo.savedCity;
 
     setState(() {
       if (_savedCity.isEmpty) {
         _savedCity = "Berlin";
-      }
-
-      if (_savedTemperature == null) {
         _showMessage = true;
         _messageText = "Aktuell keine Daten vorhanden";
-      } else {
-        _tempInfoText = "$_savedTemperature °C";
       }
-      // if (_savedRainSum != null) {
-      //   _rainSumInfoText = "Regenmenge heute: $_savedRainSum mm";
-      // }
     });
   }
 
@@ -81,7 +69,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (response.statusCode == 200) {
         _weatherJsonData = jsonDecode(response.body);
-        processWeatherData(_weatherJsonData, currentCity);
+        _showMessage = false;
+
+        setState(() {});
+        await widget.sharedPrefsRepo.overrideSavedCity(currentCity);
       } else {
         setState(() {
           _showMessage = true;
@@ -95,28 +86,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _messageText = "Ein Fehler ist aufgetreten";
       });
       return;
-    }
-  }
-
-  void processWeatherData(weatherJsonData, currentCity) async {
-    try {
-      final newTemperature = weatherJsonData["current"]["temperature_2m"];
-      // final newRainSumList = weatherJsonData["daily"]["rain_sum"];
-
-      setState(() {
-        _showMessage = false;
-        _tempInfoText = "$newTemperature °C";
-        // _rainSumInfoText = "Regenmenge heute: ${newRainSumList.first} mm";
-        _messageText = "";
-      });
-      await widget.sharedPrefsRepo.overrideSavedTemperature(newTemperature);
-      // await widget.sharedPrefsRepo.overrideSavedRainSum(newRainSumList.first);
-
-      _savedCity = currentCity!;
-      await widget.sharedPrefsRepo.overrideSavedCity(currentCity);
-    } catch (error) {
-      _showMessage = true;
-      _messageText = "Es ist ein Problem aufgetreten";
     }
   }
 
@@ -154,7 +123,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   : SizedBox(
                       child: Column(
                         children: [
-                          Text(_tempInfoText, style: TextStyle(fontSize: 40)),
+                          Temperature(
+                              weatherJsonData: _weatherJsonData,
+                              sharedPrefsRepo: widget.sharedPrefsRepo),
                           ApparentTemperature(
                             weatherJsonData: _weatherJsonData,
                             sharedPrefsRepo: widget.sharedPrefsRepo,
@@ -170,8 +141,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           RainSum(
                               sharedPrefsRepo: widget.sharedPrefsRepo,
                               weatherJsonData: _weatherJsonData),
-                          // Text(_rainSumInfoText,
-                          //     style: TextStyle(fontSize: 20)),
                           SizedBox(height: 40),
                           SevenDayForecastContainer(
                             weatherJsonData: _weatherJsonData,
@@ -181,34 +150,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
               Spacer(),
-              Column(
-                children: [
-                  DropdownMenu(
-                    initialSelection: _savedCity,
-                    controller: cityController,
-                    onSelected: (value) {
-                      setState(() {
-                        _savedCity = value!;
-                        fetchCurrentWeatherData(_savedCity);
-                      });
-                    },
-                    dropdownMenuEntries: cityData.keys
-                        .map((city) =>
-                            DropdownMenuEntry(value: city, label: city))
-                        .toList(),
-                  ),
-                  SizedBox(height: 15),
-                  ElevatedButton.icon(
-                    label: Text("Aktualisieren"),
-                    icon: Icon(
-                      Icons.refresh,
-                      size: 40,
-                    ),
-                    onPressed: () {
-                      fetchCurrentWeatherData(_savedCity);
-                    },
-                  ),
-                ],
+              CityDropdownMenu(
+                updateCityFunc: updateCity,
+                fetchCurrentWeatherFunc: fetchCurrentWeatherData,
+                savedCity: _savedCity,
+                cityController: cityController,
               ),
               SizedBox(height: 70),
             ],
@@ -216,5 +162,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  void updateCity(value) {
+    setState(() {
+      _savedCity = value!;
+      fetchCurrentWeatherData(_savedCity);
+    });
   }
 }
