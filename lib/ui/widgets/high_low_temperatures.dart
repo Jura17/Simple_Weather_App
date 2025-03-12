@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:p21_weather_app/data/repositories/shared_preferences_repository.dart';
 
 class HighLowTemperatures extends StatefulWidget {
-  const HighLowTemperatures(
-      {super.key,
-      required this.sharedPrefsRepo,
-      required this.weatherJsonData});
+  const HighLowTemperatures({
+    super.key,
+    required this.sharedPrefsRepo,
+    required this.weatherJsonData,
+  });
 
   final SharedPreferencesRepository sharedPrefsRepo;
   final dynamic weatherJsonData;
@@ -17,13 +18,13 @@ class HighLowTemperatures extends StatefulWidget {
 class _HighLowTemperaturesState extends State<HighLowTemperatures> {
   String _minTempTodayInfoText = "";
   String _maxTempTodayInfoText = "";
-  List<String>? _mostRecentMinTempList;
-  List<String>? _mostRecentMaxTempList;
+  List<String>? _savedMinTempList;
+  List<String>? _savedMaxTempList;
 
   @override
   void initState() {
     super.initState();
-    fetchRecentHighLowTemperatures();
+    fetchSavedHighLowTemperatures();
   }
 
   @override
@@ -39,6 +40,17 @@ class _HighLowTemperaturesState extends State<HighLowTemperatures> {
     );
   }
 
+  void fetchSavedHighLowTemperatures() async {
+    _savedMinTempList = await widget.sharedPrefsRepo.savedMinTempList;
+    _savedMaxTempList = await widget.sharedPrefsRepo.savedMaxTempList;
+    setState(() {
+      if (_savedMinTempList != null && _savedMaxTempList != null) {
+        _minTempTodayInfoText = "L: ${_savedMinTempList!.first}";
+        _maxTempTodayInfoText = "H: ${_savedMaxTempList!.first}";
+      }
+    });
+  }
+
   void processHighLowTempData(weatherJsonData) async {
     if (weatherJsonData == null || weatherJsonData == "") return;
     final newMinTempList = weatherJsonData["daily"]["temperature_2m_min"];
@@ -47,18 +59,7 @@ class _HighLowTemperaturesState extends State<HighLowTemperatures> {
     _minTempTodayInfoText = "L: ${newMinTempList.first}";
     _maxTempTodayInfoText = "H: ${newMaxTempList.first}";
 
-    await widget.sharedPrefsRepo.overrideMinTempList(newMinTempList);
-    await widget.sharedPrefsRepo.overrideMaxTempList(newMaxTempList);
-  }
-
-  void fetchRecentHighLowTemperatures() async {
-    _mostRecentMinTempList = await widget.sharedPrefsRepo.recentMinTempList;
-    _mostRecentMaxTempList = await widget.sharedPrefsRepo.recentMaxTempList;
-    setState(() {
-      if (_mostRecentMinTempList != null && _mostRecentMaxTempList != null) {
-        _minTempTodayInfoText = "L: ${_mostRecentMinTempList!.first}";
-        _maxTempTodayInfoText = "H: ${_mostRecentMaxTempList!.first}";
-      }
-    });
+    await widget.sharedPrefsRepo.overrideSavedMinTempList(newMinTempList);
+    await widget.sharedPrefsRepo.overrideSavedMaxTempList(newMaxTempList);
   }
 }

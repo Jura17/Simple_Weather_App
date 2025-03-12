@@ -5,11 +5,11 @@ class SevenDayForecastContainer extends StatefulWidget {
   const SevenDayForecastContainer({
     super.key,
     required this.sharedPrefsRepo,
-    required this.jsonResponse,
+    required this.weatherJsonData,
   });
 
   final SharedPreferencesRepository sharedPrefsRepo;
-  final dynamic jsonResponse;
+  final dynamic weatherJsonData;
 
   @override
   State<SevenDayForecastContainer> createState() =>
@@ -30,7 +30,7 @@ class _SevenDayForecastContainerState extends State<SevenDayForecastContainer> {
 
   @override
   Widget build(BuildContext context) {
-    processForecastData(widget.jsonResponse);
+    processForecastData(widget.weatherJsonData);
 
     return Column(
       children: [
@@ -91,7 +91,7 @@ class _SevenDayForecastContainerState extends State<SevenDayForecastContainer> {
 
       generateForecastMap(newDateList, newMinTempList, newMaxTempList);
 
-      await widget.sharedPrefsRepo.overrideDateList(newDateList);
+      await widget.sharedPrefsRepo.overrideSavedDateList(newDateList);
     } catch (error) {
       // _showError = true;
       // _errorText = "Es ist ein Problem aufgetreten";
@@ -99,9 +99,9 @@ class _SevenDayForecastContainerState extends State<SevenDayForecastContainer> {
   }
 
   void fetchRecentForecastData() async {
-    _mostRecentMinTempList = await widget.sharedPrefsRepo.recentMinTempList;
-    _mostRecentMaxTempList = await widget.sharedPrefsRepo.recentMaxTempList;
-    _mostRecentDateList = await widget.sharedPrefsRepo.recentDateList;
+    _mostRecentMinTempList = await widget.sharedPrefsRepo.savedMinTempList;
+    _mostRecentMaxTempList = await widget.sharedPrefsRepo.savedMaxTempList;
+    _mostRecentDateList = await widget.sharedPrefsRepo.savedDateList;
 
     setState(() {
       if (_mostRecentMinTempList != null &&

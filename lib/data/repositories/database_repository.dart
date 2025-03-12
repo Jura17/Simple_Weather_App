@@ -1,20 +1,20 @@
 abstract class DatabaseRepository {
-  Future<void> overrideRecentCity(String currentCity);
-  Future<void> overrideRecentTemperature(double recentTemp);
-  Future<void> overrideRecentApparentTemp(double recentApparentTemp);
-  Future<void> overrideRecentHumidity(int recentHumidity);
-  Future<void> overrideRecentRainSum(double recentRainSumList);
-  Future<void> overrideMinTempList(List<dynamic> recentMinTempList);
-  Future<void> overrideMaxTempList(List<dynamic> recentMaxTempList);
-  Future<void> overrideDateList(List<dynamic> recentDateList);
+  Future<void> overrideSavedCity(String newCity);
+  Future<void> overrideSavedTemperature(double newTemp);
+  Future<void> overrideSavedApparentTemp(double newApparentTemp);
+  Future<void> overrideSavedHumidity(int newHumidity);
+  Future<void> overrideSavedRainSum(double newRainSum);
+  Future<void> overrideSavedMinTempList(List<dynamic> newMinTempList);
+  Future<void> overrideSavedMaxTempList(List<dynamic> newMaxTempList);
+  Future<void> overrideSavedDateList(List<dynamic> newDateList);
 
-  Future<String> get recentCity;
-  Future<double?> get recentTemperature;
-  Future<double?> get recentApparentTemp;
-  Future<int?> get recentHumidity;
-  Future<double?> get recentRainSum;
-  Future<List<String>?> get recentMinTempList;
-  Future<List<String>?> get recentMaxTempList;
-  Future<List<String>?> get recentDateList;
+  Future<String> get savedCity;
+  Future<double?> get savedTemperature;
+  Future<double?> get savedApparentTemp;
+  Future<int?> get savedHumidity;
+  Future<double?> get savedRainSum;
+  Future<List<String>?> get savedMinTempList;
+  Future<List<String>?> get savedMaxTempList;
+  Future<List<String>?> get savedDateList;
   Future<void> clearHistory();
 }

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:p21_weather_app/data/city_data.dart';
 import 'package:p21_weather_app/data/repositories/shared_preferences_repository.dart';
+import 'package:p21_weather_app/ui/widgets/apparent_temperature.dart';
 import 'package:p21_weather_app/ui/widgets/high_low_temperatures.dart';
+import 'package:p21_weather_app/ui/widgets/humidity.dart';
 import 'package:p21_weather_app/ui/widgets/seven_day_forecast_container.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,19 +23,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _tempInfoText = "";
-  String _apparentTempInfoText = "";
-  String _humidityInfoText = "";
   String _rainSumInfoText = "";
-
   String _messageText = "";
   bool _showMessage = false;
-
-  double? _mostRecentTemperature;
-  double? _mostRecentApparentTemp;
-  int? _mostRecentHumidity;
-  double? _mostRecentRainSum;
-
-  String _mostRecentCity = "Berlin";
+  double? _savedTemperature;
+  double? _savedRainSum;
+  String _savedCity = "Berlin";
 
   dynamic _weatherJsonData = "";
   TextEditingController cityController = TextEditingController();
@@ -51,33 +46,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void fetchRecentWeatherData() async {
-    _mostRecentTemperature = await widget.sharedPrefsRepo.recentTemperature;
-
-    _mostRecentApparentTemp = await widget.sharedPrefsRepo.recentApparentTemp;
-    _mostRecentHumidity = await widget.sharedPrefsRepo.recentHumidity;
-    _mostRecentRainSum = await widget.sharedPrefsRepo.recentRainSum;
-    _mostRecentCity = await widget.sharedPrefsRepo.recentCity;
+    _savedTemperature = await widget.sharedPrefsRepo.savedTemperature;
+    _savedRainSum = await widget.sharedPrefsRepo.savedRainSum;
+    _savedCity = await widget.sharedPrefsRepo.savedCity;
 
     setState(() {
-      if (_mostRecentCity.isEmpty) {
-        _mostRecentCity = "Berlin";
+      if (_savedCity.isEmpty) {
+        _savedCity = "Berlin";
       }
 
-      if (_mostRecentTemperature == null) {
+      if (_savedTemperature == null) {
         _showMessage = true;
         _messageText = "Aktuell keine Daten vorhanden";
       } else {
-        _tempInfoText = "$_mostRecentTemperature °C";
+        _tempInfoText = "$_savedTemperature °C";
       }
-
-      if (_mostRecentApparentTemp != null) {
-        _apparentTempInfoText = "Gefühlt: $_mostRecentApparentTemp °C";
-      }
-      if (_mostRecentHumidity != null) {
-        _humidityInfoText = "Luftfeuchtigkeit: $_mostRecentHumidity%";
-      }
-      if (_mostRecentRainSum != null) {
-        _rainSumInfoText = "Regenmenge heute: $_mostRecentRainSum mm";
+      if (_savedRainSum != null) {
+        _rainSumInfoText = "Regenmenge heute: $_savedRainSum mm";
       }
     });
   }
@@ -115,27 +100,19 @@ class _HomeScreenState extends State<HomeScreen> {
   void processWeatherData(weatherJsonData, currentCity) async {
     try {
       final newTemperature = weatherJsonData["current"]["temperature_2m"];
-      final newHumidity = weatherJsonData["current"]["relative_humidity_2m"];
-      final newApparentTemp =
-          weatherJsonData["current"]["apparent_temperature"];
       final newRainSumList = weatherJsonData["daily"]["rain_sum"];
 
       setState(() {
         _showMessage = false;
         _tempInfoText = "$newTemperature °C";
-        _apparentTempInfoText = "Gefühlt: $newApparentTemp °C";
-        _humidityInfoText = "Luftfeuchtigkeit: $newHumidity%";
         _rainSumInfoText = "Regenmenge heute: ${newRainSumList.first} mm";
-
         _messageText = "";
       });
-      await widget.sharedPrefsRepo.overrideRecentTemperature(newTemperature);
-      await widget.sharedPrefsRepo.overrideRecentApparentTemp(newApparentTemp);
-      await widget.sharedPrefsRepo.overrideRecentHumidity(newHumidity);
-      await widget.sharedPrefsRepo.overrideRecentRainSum(newRainSumList.first);
+      await widget.sharedPrefsRepo.overrideSavedTemperature(newTemperature);
+      await widget.sharedPrefsRepo.overrideSavedRainSum(newRainSumList.first);
 
-      _mostRecentCity = currentCity!;
-      await widget.sharedPrefsRepo.overrideRecentCity(currentCity);
+      _savedCity = currentCity!;
+      await widget.sharedPrefsRepo.overrideSavedCity(currentCity);
     } catch (error) {
       _showMessage = true;
       _messageText = "Es ist ein Problem aufgetreten";
@@ -167,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               SizedBox(height: 70),
               Text(
-                _mostRecentCity,
+                _savedCity,
                 style: TextStyle(fontSize: 40, fontWeight: FontWeight.w700),
               ),
               SizedBox(height: 20),
@@ -177,20 +154,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         children: [
                           Text(_tempInfoText, style: TextStyle(fontSize: 40)),
-                          Text(_apparentTempInfoText,
-                              style: TextStyle(fontSize: 20)),
+                          ApparentTemperature(
+                            weatherJsonData: _weatherJsonData,
+                            sharedPrefsRepo: widget.sharedPrefsRepo,
+                          ),
                           HighLowTemperatures(
                               weatherJsonData: _weatherJsonData,
                               sharedPrefsRepo: widget.sharedPrefsRepo),
                           SizedBox(height: 30),
-                          Text(_humidityInfoText,
-                              style: TextStyle(fontSize: 20)),
+                          Humidity(
+                              sharedPrefsRepo: widget.sharedPrefsRepo,
+                              weatherJsonData: _weatherJsonData),
                           SizedBox(height: 5),
                           Text(_rainSumInfoText,
                               style: TextStyle(fontSize: 20)),
                           SizedBox(height: 40),
                           SevenDayForecastContainer(
-                            jsonResponse: _weatherJsonData,
+                            weatherJsonData: _weatherJsonData,
                             sharedPrefsRepo: widget.sharedPrefsRepo,
                           )
                         ],
@@ -200,12 +180,12 @@ class _HomeScreenState extends State<HomeScreen> {
               Column(
                 children: [
                   DropdownMenu(
-                    initialSelection: _mostRecentCity,
+                    initialSelection: _savedCity,
                     controller: cityController,
                     onSelected: (value) {
                       setState(() {
-                        _mostRecentCity = value!;
-                        fetchCurrentWeatherData(_mostRecentCity);
+                        _savedCity = value!;
+                        fetchCurrentWeatherData(_savedCity);
                       });
                     },
                     dropdownMenuEntries: cityData.keys
@@ -221,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       size: 40,
                     ),
                     onPressed: () {
-                      fetchCurrentWeatherData(_mostRecentCity);
+                      fetchCurrentWeatherData(_savedCity);
                     },
                   ),
                 ],

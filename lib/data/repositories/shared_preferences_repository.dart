@@ -18,59 +18,59 @@ class SharedPreferencesRepository extends DatabaseRepository {
   }
 
   @override
-  Future<void> overrideRecentTemperature(double recentTemp) async {
+  Future<void> overrideSavedTemperature(double newTemp) async {
     final prefs = await _prefsFuture;
-    await prefs.setDouble(_tempKey, recentTemp);
+    await prefs.setDouble(_tempKey, newTemp);
   }
 
   @override
-  Future<void> overrideRecentApparentTemp(double recentApparentTemp) async {
+  Future<void> overrideSavedApparentTemp(double newApparentTemp) async {
     final prefs = await _prefsFuture;
-    await prefs.setDouble(_apparentTempKey, recentApparentTemp);
+    await prefs.setDouble(_apparentTempKey, newApparentTemp);
   }
 
   @override
-  Future<void> overrideRecentHumidity(int recentHumidity) async {
+  Future<void> overrideSavedHumidity(int newHumidity) async {
     final prefs = await _prefsFuture;
-    await prefs.setInt(_humidityKey, recentHumidity);
+    await prefs.setInt(_humidityKey, newHumidity);
   }
 
   @override
-  Future<void> overrideRecentRainSum(double recentRainSum) async {
+  Future<void> overrideSavedRainSum(double newRainSum) async {
     final prefs = await _prefsFuture;
 
-    await prefs.setDouble(_rainSumKey, recentRainSum);
+    await prefs.setDouble(_rainSumKey, newRainSum);
   }
 
   @override
-  Future<void> overrideMinTempList(List<dynamic> recentMinTempList) async {
+  Future<void> overrideSavedMinTempList(List<dynamic> newMinTempList) async {
     final prefs = await _prefsFuture;
     final List<String> minTempStringList =
-        recentMinTempList.map((minTemp) => minTemp.toString()).toList();
+        newMinTempList.map((minTemp) => minTemp.toString()).toList();
 
     await prefs.setStringList(_minTempKey, minTempStringList);
   }
 
   @override
-  Future<void> overrideMaxTempList(List<dynamic> recentMaxTempList) async {
+  Future<void> overrideSavedMaxTempList(List<dynamic> newMaxTempList) async {
     final prefs = await _prefsFuture;
     final List<String> maxTempStringList =
-        recentMaxTempList.map((maxTemp) => maxTemp.toString()).toList();
+        newMaxTempList.map((maxTemp) => maxTemp.toString()).toList();
 
     await prefs.setStringList(_maxTempKey, maxTempStringList);
   }
 
   @override
-  Future<void> overrideRecentCity(String currentCity) async {
+  Future<void> overrideSavedCity(String newCity) async {
     final prefs = await _prefsFuture;
-    await prefs.setString(_cityKey, currentCity);
+    await prefs.setString(_cityKey, newCity);
   }
 
   @override
-  Future<void> overrideDateList(List<dynamic> recentDateList) async {
+  Future<void> overrideSavedDateList(List<dynamic> newDateList) async {
     final prefs = await _prefsFuture;
     final List<String> dateStringList =
-        recentDateList.map((date) => date.toString()).toList();
+        newDateList.map((date) => date.toString()).toList();
     await prefs.setStringList(_dateListKey, dateStringList);
   }
 
@@ -87,49 +87,49 @@ class SharedPreferencesRepository extends DatabaseRepository {
   }
 
   @override
-  Future<String> get recentCity async {
+  Future<String> get savedCity async {
     final prefs = await _prefsFuture;
     return prefs.getString(_cityKey) ?? '';
   }
 
   @override
-  Future<double?> get recentTemperature async {
+  Future<double?> get savedTemperature async {
     final prefs = await _prefsFuture;
     return prefs.getDouble(_tempKey);
   }
 
   @override
-  Future<double?> get recentApparentTemp async {
+  Future<double?> get savedApparentTemp async {
     final prefs = await _prefsFuture;
     return prefs.getDouble(_apparentTempKey);
   }
 
   @override
-  Future<int?> get recentHumidity async {
+  Future<int?> get savedHumidity async {
     final prefs = await _prefsFuture;
     return prefs.getInt(_humidityKey);
   }
 
   @override
-  Future<double?> get recentRainSum async {
+  Future<double?> get savedRainSum async {
     final prefs = await _prefsFuture;
     return prefs.getDouble(_rainSumKey);
   }
 
   @override
-  Future<List<String>?> get recentMinTempList async {
+  Future<List<String>?> get savedMinTempList async {
     final prefs = await _prefsFuture;
     return prefs.getStringList(_minTempKey);
   }
 
   @override
-  Future<List<String>?> get recentMaxTempList async {
+  Future<List<String>?> get savedMaxTempList async {
     final prefs = await _prefsFuture;
     return prefs.getStringList(_maxTempKey);
   }
 
   @override
-  Future<List<String>?> get recentDateList async {
+  Future<List<String>?> get savedDateList async {
     final prefs = await _prefsFuture;
     return prefs.getStringList(_dateListKey);
   }
