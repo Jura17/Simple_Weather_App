@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:p21_weather_app/data/city_data.dart';
 import 'package:p21_weather_app/data/repositories/shared_preferences_repository.dart';
-import 'package:p21_weather_app/ui/widgets/weather_data_container.dart';
+import 'package:p21_weather_app/ui/widgets/seven_day_forecast_container.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -25,9 +25,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String _rainSumInfoText = "";
   String _minTempTodayInfoText = "";
   String _maxTempTodayInfoText = "";
-  String _errorText = "";
-  bool _showError = false;
-  final Map<String, dynamic> _foreCastData = {};
+  String _messageText = "";
+  bool _showMessage = false;
 
   double? _mostRecentTemperature;
   double? _mostRecentApparentTemp;
@@ -35,9 +34,9 @@ class _HomeScreenState extends State<HomeScreen> {
   double? _mostRecentRainSum;
   List<String>? _mostRecentMinTempList;
   List<String>? _mostRecentMaxTempList;
-  List<String>? _mostRecentDateList;
   String _mostRecentCity = "Berlin";
 
+  dynamic _weatherJsonData = "";
   TextEditingController cityController = TextEditingController();
 
   @override
@@ -60,7 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _mostRecentHumidity = await widget.sharedPrefsRepo.recentHumidity;
     _mostRecentRainSum = await widget.sharedPrefsRepo.recentRainSum;
     _mostRecentCity = await widget.sharedPrefsRepo.recentCity;
-    _mostRecentDateList = await widget.sharedPrefsRepo.recentDateList;
 
     setState(() {
       if (_mostRecentCity.isEmpty) {
@@ -68,8 +66,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       if (_mostRecentTemperature == null) {
-        _showError = true;
-        _errorText = "Aktuell keine Daten vorhanden";
+        _showMessage = true;
+        _messageText = "Aktuell keine Daten vorhanden";
       } else {
         _tempInfoText = "$_mostRecentTemperature °C";
       }
@@ -87,12 +85,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _minTempTodayInfoText = "L: ${_mostRecentMinTempList!.first}";
         _maxTempTodayInfoText = "H: ${_mostRecentMaxTempList!.first}";
       }
-      if (_mostRecentMinTempList != null &&
-          _mostRecentMaxTempList != null &&
-          _mostRecentDateList != null) {
-        generateForecastMap(_mostRecentDateList, _mostRecentMinTempList,
-            _mostRecentMaxTempList);
-      }
     });
   }
 
@@ -108,39 +100,21 @@ class _HomeScreenState extends State<HomeScreen> {
       final response = await http.get(Uri.parse(uri));
 
       if (response.statusCode == 200) {
-        final weatherJsonData = jsonDecode(response.body);
-        processWeatherData(weatherJsonData, currentCity);
+        _weatherJsonData = jsonDecode(response.body);
+        processWeatherData(_weatherJsonData, currentCity);
       } else {
         setState(() {
-          _showError = true;
-          _errorText =
+          _showMessage = true;
+          _messageText =
               "Daten konnten nicht geladen werden.\nVersuch es später erneut.";
         });
       }
     } catch (error) {
       setState(() {
-        _showError = true;
-        _errorText = "Ein Fehler ist aufgetreten";
+        _showMessage = true;
+        _messageText = "Ein Fehler ist aufgetreten";
       });
       return;
-    }
-  }
-
-  void generateForecastMap(dateList, minTempList, maxTempList) {
-    List<String> weekDays = [
-      "Montag",
-      "Dienstag",
-      "Mittwoch",
-      "Donnerstag",
-      "Freitag",
-      "Samstag",
-      "Sonntag"
-    ];
-
-    for (int i = 0; i < dateList.length; i++) {
-      DateTime date = DateTime.parse(dateList[i]);
-      String weekDay = weekDays[date.weekday - 1];
-      _foreCastData[weekDay] = [minTempList[i], maxTempList[i]];
     }
   }
 
@@ -154,18 +128,15 @@ class _HomeScreenState extends State<HomeScreen> {
       final newMinTempList = weatherJsonData["daily"]["temperature_2m_min"];
       final newMaxTempList = weatherJsonData["daily"]["temperature_2m_max"];
 
-      final newDateList = weatherJsonData["daily"]["time"];
-      generateForecastMap(newDateList, newMinTempList, newMaxTempList);
-
       setState(() {
-        _showError = false;
+        _showMessage = false;
         _tempInfoText = "$newTemperature °C";
         _apparentTempInfoText = "Gefühlt: $newApparentTemp °C";
         _humidityInfoText = "Luftfeuchtigkeit: $newHumidity%";
         _rainSumInfoText = "Regenmenge heute: ${newRainSumList.first} mm";
         _minTempTodayInfoText = "L: ${newMinTempList.first}";
         _maxTempTodayInfoText = "H: ${newMaxTempList.first}";
-        _errorText = "";
+        _messageText = "";
       });
       await widget.sharedPrefsRepo.overrideRecentTemperature(newTemperature);
       await widget.sharedPrefsRepo.overrideRecentApparentTemp(newApparentTemp);
@@ -173,13 +144,12 @@ class _HomeScreenState extends State<HomeScreen> {
       await widget.sharedPrefsRepo.overrideRecentRainSum(newRainSumList.first);
       await widget.sharedPrefsRepo.overrideMinTempList(newMinTempList);
       await widget.sharedPrefsRepo.overrideMaxTempList(newMaxTempList);
-      await widget.sharedPrefsRepo.overrideDateList(newDateList);
 
       _mostRecentCity = currentCity!;
       await widget.sharedPrefsRepo.overrideRecentCity(currentCity);
     } catch (error) {
-      _showError = true;
-      _errorText = "Es ist ein Problem aufgetreten";
+      _showMessage = true;
+      _messageText = "Es ist ein Problem aufgetreten";
     }
   }
 
@@ -189,7 +159,13 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         actions: [
           TextButton(
-            onPressed: widget.sharedPrefsRepo.clearHistory,
+            onPressed: () {
+              setState(() {
+                widget.sharedPrefsRepo.clearHistory();
+                _showMessage = true;
+                _messageText = "Aktuell keine Daten vorhanden";
+              });
+            },
             child: Text("Historie löschen"),
           )
         ],
@@ -206,16 +182,37 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(fontSize: 40, fontWeight: FontWeight.w700),
               ),
               SizedBox(height: 20),
-              _showError
-                  ? Text(_errorText, style: TextStyle(fontSize: 20))
-                  : WeatherDataContainer(
-                      tempInfoText: _tempInfoText,
-                      apparentTempInfoText: _apparentTempInfoText,
-                      minTempTodayInfoText: _minTempTodayInfoText,
-                      maxTempTodayInfoText: _maxTempTodayInfoText,
-                      humidityInfoText: _humidityInfoText,
-                      rainSumInfoText: _rainSumInfoText,
-                      foreCastData: _foreCastData,
+              _showMessage
+                  ? Text(_messageText, style: TextStyle(fontSize: 20))
+                  : SizedBox(
+                      child: Column(
+                        children: [
+                          Text(_tempInfoText, style: TextStyle(fontSize: 40)),
+                          Text(_apparentTempInfoText,
+                              style: TextStyle(fontSize: 20)),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            spacing: 10,
+                            children: [
+                              Text(_minTempTodayInfoText,
+                                  style: TextStyle(fontSize: 20)),
+                              Text(_maxTempTodayInfoText,
+                                  style: TextStyle(fontSize: 20)),
+                            ],
+                          ),
+                          SizedBox(height: 30),
+                          Text(_humidityInfoText,
+                              style: TextStyle(fontSize: 20)),
+                          SizedBox(height: 5),
+                          Text(_rainSumInfoText,
+                              style: TextStyle(fontSize: 20)),
+                          SizedBox(height: 40),
+                          SevenDayForecastContainer(
+                            jsonResponse: _weatherJsonData,
+                            sharedPrefsRepo: widget.sharedPrefsRepo,
+                          )
+                        ],
+                      ),
                     ),
               Spacer(),
               Column(
@@ -226,6 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onSelected: (value) {
                       setState(() {
                         _mostRecentCity = value!;
+                        fetchCurrentWeatherData(_mostRecentCity);
                       });
                     },
                     dropdownMenuEntries: cityData.keys

@@ -74,3 +74,12 @@ class WeatherDataContainer extends StatelessWidget {
     );
   }
 }
+
+// class SevenDayForecastContainer extends StatelessWidget {
+//   const SevenDayForecastContainer({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return const Placeholder();
+//   }
+// }
